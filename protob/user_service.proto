@@ -1,0 +1,40 @@
+syntax = "proto3";
+
+option go_package = "user_service/protob";
+
+message User {
+  int64 ID = 1;
+  string Username = 2;
+  bool Admin = 3;
+}
+
+message GetUserRequest {
+  int32 ID = 1;
+}
+
+message GetUserResponse {
+  User user = 1;
+}
+
+message GetUsersRequest {}
+
+message GetUsersResponse {
+  repeated User users = 1;
+}
+
+message CreateUserRequest {
+  string username = 1;
+}
+
+message CreateUserResponse {
+  string confirmation = 1;
+}
+
+service UserService {
+  // Get User by the users ID
+  rpc GetById(GetUserRequest) returns (GetUserResponse) {};
+  rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {};
+
+  // Creates new user and returns created user
+  rpc Create(CreateUserRequest) returns (CreateUserResponse) {};
+}

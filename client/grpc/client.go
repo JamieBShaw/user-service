@@ -1,0 +1,51 @@
+package main
+
+import (
+	"context"
+	"fmt"
+	"github.com/JamieBShaw/user-service/protob"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+	"log"
+)
+
+func main() {
+
+	cc, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("error getting connection grpc client: %v", err)
+	}
+
+	log.Println("listening on port 50051")
+
+	defer cc.Close()
+
+	c := protob.NewUserServiceClient(cc)
+
+	req := &protob.GetUserRequest{
+		ID: int32(1),
+	}
+	getUserByID(c, req)
+
+}
+
+
+func getUserByID(c protob.UserServiceClient, req *protob.GetUserRequest) {
+
+	res, err := c.GetById(context.Background(), req)
+	if err != nil {
+		err, ok := status.FromError(err)
+		if ok {
+			log.Printf("Message: %v , Code: %v", err.Message(), err.Code())
+
+			if err.Code() == codes.InvalidArgument {
+				log.Printf("user name not valid: %v", err)
+			}
+
+		} else {
+			log.Fatalf("error not grpc error: %v", err)
+		}
+	}
+	fmt.Printf("USER: %v", res.GetUser())
+}
