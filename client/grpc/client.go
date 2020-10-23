@@ -23,10 +23,12 @@ func main() {
 
 	c := protob.NewUserServiceClient(cc)
 
-	req := &protob.GetUserRequest{
-		ID: int32(1),
-	}
-	getUserByID(c, req)
+	//req := &protob.GetUserRequest{
+	//	ID: int32(1),
+	//}
+	//getUserByID(c, req)
+
+	getUsers(c)
 
 }
 
@@ -48,4 +50,52 @@ func getUserByID(c protob.UserServiceClient, req *protob.GetUserRequest) {
 		}
 	}
 	fmt.Printf("USER: %v", res.GetUser())
+}
+
+func getUsers(c protob.UserServiceClient) {
+
+	req := &protob.GetUsersRequest{}
+
+	res, err := c.GetUsers(context.Background(), req)
+	if err != nil {
+		err, ok := status.FromError(err)
+		if ok {
+			log.Printf("Message: %v, Code: %v", err.Message(), err.Code())
+
+			if err.Code() == codes.InvalidArgument {
+				log.Printf("user name not valid: %v", err)
+			}
+		} else {
+			log.Fatalf("error not grpc error: %v", err)
+		}
+	}
+
+	users := res.GetUsers()
+
+	for _, user := range users {
+		log.Printf("User: %v", user)
+	}
+
+}
+
+func createUser(c protob.UserServiceClient) {
+
+	req := &protob.CreateUserRequest{Username: "Jamie0001"}
+
+	res, err := c.Create(context.Background(), req)
+	if err != nil {
+		err, ok := status.FromError(err)
+		if ok {
+			log.Printf("Message: %v, Code: %v", err.Message(), err.Code())
+
+			if err.Code() == codes.InvalidArgument {
+				log.Printf("user name not valid: %v", err)
+			}
+		} else {
+			log.Fatalf("error not grpc error: %v", err)
+		}
+	}
+
+	log.Printf("response: %v", res.GetConfirmation())
+
 }

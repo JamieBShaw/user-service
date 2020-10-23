@@ -41,7 +41,7 @@ func main() {
 	userService := service.NewUserService(repo, log)
 
 	if *grpc {
-		log.Infof("grpc user service is running on port: %v", *port)
+		log.Infof("Starting GRPC User Service running on port: %v", *port)
 
 		lis, err := net.Listen("tcp", "localhost:" + *port)
 		if err != nil {
@@ -68,7 +68,7 @@ func main() {
 		}
 
 		go func() {
-			log.Infof("Starting User Service on port: %v", *port)
+			log.Infof("Starting HTTP User Service running on port: %v", *port)
 			if err := srv.ListenAndServe(); err != nil {
 				log.Println(err)
 			}

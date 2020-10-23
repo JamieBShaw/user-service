@@ -7,9 +7,14 @@ func (s *httpServer) routes() {
 	post := s.router.Methods(http.MethodPost).Subrouter()
 
 	//Get
-	get.HandleFunc("/users/{id}", s.handleGetUserById)
-	get.HandleFunc("/users", s.handleGetUsers)
+	get.HandleFunc("/users/{id}", s.GetById)
+	get.HandleFunc("/users", s.GetUsers)
 
 	//Post
-	post.HandleFunc("/users", s.handlePostCreateUser())
+	post.HandleFunc("/users", s.Create())
+
+
+	// PING
+	get.HandleFunc("/ping", s.Ping)
+
 }

@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
+	"errors"
 	"github.com/JamieBShaw/user-service/domain/model"
 	"github.com/JamieBShaw/user-service/repository"
 	"github.com/sirupsen/logrus"
 )
-
 
 type userService struct {
 	db repository.Repository
@@ -14,7 +14,7 @@ type userService struct {
 }
 
 type UserService interface {
-	GetByID(ctx context.Context, id int32) (*model.User, error)
+	GetByID(ctx context.Context, id int64) (*model.User, error)
 	GetUsers(ctx context.Context) ([]*model.User, error)
 	Create(ctx context.Context, username string) error
 }
@@ -23,13 +23,13 @@ func NewUserService(db repository.Repository, log *logrus.Logger) *userService {
 	return &userService{db: db, log: log}
 }
 
-func (u *userService) GetByID(ctx context.Context, id int32) (*model.User, error) {
+func (u *userService) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	u.log.Info("USER SERVICE: Get User by ID")
 
 	user, err := u.db.UserById(ctx, id)
 	if err != nil {
 		u.log.Errorf("USER SERVICE: error: %v", err)
-		return nil, err
+		return nil, errors.New("could not find user with id")
 	}
 
 	err = user.Validate()
@@ -45,7 +45,7 @@ func (u *userService) Create(ctx context.Context, username string) error {
 
 	err := u.db.Create(ctx, username)
 	if err != nil {
-		return err
+		return errors.New("error creating user")
 	}
 
 	return nil
@@ -56,7 +56,7 @@ func (u *userService) GetUsers(ctx context.Context) ([]*model.User, error) {
 
 	users, err := u.db.GetUsers(ctx)
 	if err != nil {
-		return nil, err
+		return nil, errors.New("unable to get users")
 	}
 
 	return users, nil

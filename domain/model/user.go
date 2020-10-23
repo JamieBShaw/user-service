@@ -42,6 +42,9 @@ func validateUser(user *User) (bool, error) {
 	if user.Username == "" {
 		return false, errors.New("username is empty")
 	}
+	if len(user.Username) > 12 {
+		return false, errors.New("username is to long")
+	}
 
 	if len(user.Username) < 3 {
 		return false, errors.New("username is too short")

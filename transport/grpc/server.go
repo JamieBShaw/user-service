@@ -7,7 +7,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-
 var log = logrus.New()
 
 type grpcServer struct {
@@ -39,6 +38,7 @@ func (gs *grpcServer) GetById(ctx context.Context, req *protob.GetUserRequest) (
 
 	return res, nil
 }
+
 func (gs *grpcServer) GetUsers(ctx context.Context, _ *protob.GetUsersRequest) (*protob.GetUsersResponse, error) {
 
 	users, err := gs.service.GetUsers(ctx)
@@ -59,6 +59,7 @@ func (gs *grpcServer) GetUsers(ctx context.Context, _ *protob.GetUsersRequest) (
 
 	return req, nil
 }
+
 func (gs *grpcServer) Create(ctx context.Context, req *protob.CreateUserRequest) (*protob.CreateUserResponse, error) {
 
 	err := gs.service.Create(ctx, req.Username)

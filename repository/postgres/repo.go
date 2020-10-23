@@ -20,7 +20,7 @@ func NewRepository(log *logrus.Logger, db *pg.DB) *repository {
 		}
 }
 
-func (repo *repository) UserById(_ context.Context, id int32) (*model.User, error) {
+func (repo *repository) UserById(_ context.Context, id int64) (*model.User, error) {
 	repo.log.Info("REPO: Executing User By ID")
 
 	var user model.User

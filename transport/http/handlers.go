@@ -3,25 +3,35 @@ package http
 import (
 	"context"
 	"encoding/json"
-	"github.com/gorilla/mux"
+	"errors"
 	"net/http"
 	"strconv"
 )
 
-func (s *httpServer) handleGetUserById(rw http.ResponseWriter, r *http.Request) {
+type Server interface {
+	GetById(rw http.ResponseWriter, r *http.Request)
+	GetUsers(rw http.ResponseWriter, r *http.Request)
+	Create() http.HandlerFunc
+	Ping(rw http.ResponseWriter, r *http.Request)
+	ServeHTTP(rw http.ResponseWriter, r *http.Request)
+}
+
+func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
 
-	vars := mux.Vars(r)
+	idString := r.URL.Query().Get("id")
 
-	id, err := strconv.Atoi(vars["id"])
+	id, err := strconv.Atoi(idString)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		s.log.Errorf("error: %v", err.Error())
+		http.Error(rw, errors.New("invalid query parameter").Error(), http.StatusInternalServerError)
 		return
 	}
 
 	ctx := context.Background()
-	user, err := s.service.GetByID(ctx, int32(id))
+	user, err := s.service.GetByID(ctx, int64(id))
 	if err != nil {
+		s.log.Errorf("error: %v", err.Error())
 		http.Error(rw, err.Error(), http.StatusNotFound)
 		return
 	}
@@ -29,7 +39,7 @@ func (s *httpServer) handleGetUserById(rw http.ResponseWriter, r *http.Request) 
 	_ = json.NewEncoder(rw).Encode(user)
 }
 
-func (s *httpServer) handlePostCreateUser() http.HandlerFunc {
+func (s *httpServer) Create() http.HandlerFunc {
 
 	type request struct {
 		Username string
@@ -60,7 +70,7 @@ func (s *httpServer) handlePostCreateUser() http.HandlerFunc {
 	}
 }
 
-func (s *httpServer) handleGetUsers(rw http.ResponseWriter, r *http.Request) {
+func (s *httpServer) GetUsers(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Add("Content-Type", "application/json")
 
 	ctx := context.Background()
@@ -71,5 +81,14 @@ func (s *httpServer) handleGetUsers(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	json.NewEncoder(rw).Encode(users)
+	err = json.NewEncoder(rw).Encode(users)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+
+	}
+}
+
+func (s *httpServer) Ping(rw http.ResponseWriter, r *http.Request) {
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte("Pong!"))
 }
