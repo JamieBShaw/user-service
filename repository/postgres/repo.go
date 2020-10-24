@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+
 	"github.com/JamieBShaw/user-service/domain/model"
 	"github.com/go-pg/pg/v10"
 
@@ -9,15 +10,15 @@ import (
 )
 
 type repository struct {
-	db *pg.DB
+	db  *pg.DB
 	log *logrus.Logger
 }
 
 func NewRepository(log *logrus.Logger, db *pg.DB) *repository {
-		return &repository{
-			db: db,
-			log: log,
-		}
+	return &repository{
+		db:  db,
+		log: log,
+	}
 }
 
 func (repo *repository) UserById(_ context.Context, id int64) (*model.User, error) {
@@ -40,7 +41,7 @@ func (repo *repository) Create(_ context.Context, username string) error {
 		Username: username,
 	}
 
-	_, err := repo.db.Model(&user).Returning("*").Insert()
+	_, err := repo.db.Model(user).Insert()
 	if err != nil {
 		return err
 	}
@@ -52,7 +53,7 @@ func (repo *repository) Create(_ context.Context, username string) error {
 	return nil
 }
 
-func (repo *repository) GetUsers(_ context.Context)([]*model.User, error){
+func (repo *repository) GetUsers(_ context.Context) ([]*model.User, error) {
 	repo.log.Info("REPO: Executing Get Users")
 
 	var users []*model.User
@@ -66,4 +67,7 @@ func (repo *repository) GetUsers(_ context.Context)([]*model.User, error){
 	return users, nil
 }
 
+func (repo *repository) Delete(ctx context.Context, id int64) error {
 
+	return nil
+}

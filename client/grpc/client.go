@@ -32,7 +32,6 @@ func main() {
 
 }
 
-
 func getUserByID(c protob.UserServiceClient, req *protob.GetUserRequest) {
 
 	res, err := c.GetById(context.Background(), req)

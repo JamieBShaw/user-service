@@ -30,11 +30,22 @@ message CreateUserResponse {
   string confirmation = 1;
 }
 
+message DeleteUserRequest {
+  int64  ID = 1;
+}
+
+message DeleteUserResponse {
+  string confirmation = 1;
+}
+
 service UserService {
-  // Get User by the users ID
+  // Get User(s)
   rpc GetById(GetUserRequest) returns (GetUserResponse) {};
   rpc GetUsers(GetUsersRequest) returns (GetUsersResponse) {};
 
   // Creates new user and returns created user
   rpc Create(CreateUserRequest) returns (CreateUserResponse) {};
+
+  // Delete user
+  rpc Delete(DeleteUserRequest) returns (DeleteUserResponse) {};
 }

@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -21,11 +21,13 @@ type mockUserService struct {
 	db repository.Repository
 }
 
+
 type mockDb struct{}
 
 func TestHttpServer_GetUsers_Valid_Response(t *testing.T) {
 	serverMock := httpServer{
 		service: mockUserService{},
+		log:     l,
 	}
 	req, err := http.NewRequest("GET", "localhost:50051/users", nil)
 	if err != nil {
@@ -45,42 +47,44 @@ func TestHttpServer_GetUsers_Valid_Response(t *testing.T) {
 
 func TestHttpServer_GetById_Test_Cases(t *testing.T) {
 	tt := []struct {
-		name   string
-		status int
+		name        string
+		status      int
 		expectedRes string
-		errMsg string
-		userId string
+		errMsg      string
+		userId      string
 	}{
 		{
-			name:   "valid user response",
-			status: 200,
-			errMsg: "",
+			name:        "valid user response",
+			status:      200,
+			errMsg:      "",
 			expectedRes: "{\"id\":1,\"username\":\"David\",\"admin\":false}",
-			userId: "1",
+			userId:      "1",
 		},
 		{
-			name:   "user with that id does not exist",
-			status: 404,
+			name:        "user with that id does not exist",
+			status:      404,
 			expectedRes: "",
-			errMsg: "could not find user with id",
-			userId: "42",
+			errMsg:      "could not find user with id",
+			userId:      "42",
 		},
 		{
-			name: "invalid url parameter",
-			status: 500,
+			name:        "invalid url parameter",
+			status:      500,
 			expectedRes: "",
-			errMsg: "invalid query parameter",
-			userId: "foxtrot",
+			errMsg:      "invalid query parameter",
+			userId:      "foxtrot",
 		},
 	}
 
 	for _, tc := range tt {
+		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			serverMock := httpServer{
 				service: mockUserService{},
-				log: logrus.New(),
+				log:     l,
 			}
-			req, err := http.NewRequest("GET", "localhost:50051/users/?id=" + tc.userId, nil)
+			req, err := http.NewRequest("GET", "localhost:50051/users/?id="+tc.userId, nil)
 			if err != nil {
 				t.Fatalf("could not create mock request: %v", err)
 			}
@@ -105,11 +109,150 @@ func TestHttpServer_GetById_Test_Cases(t *testing.T) {
 			}
 			assert.Equal(t, tc.status, res.StatusCode)
 			assert.Equal(t, tc.errMsg, string(bytes.TrimSpace(b)))
-
 		})
+	}
+}
 
+func TestHttpServer_Create(t *testing.T) {
+	tt := []struct {
+		name        string
+		username    string
+		status      int
+		expectedRes string
+		errMsg      string
+	}{
+		{
+			name:        "valid user created",
+			username:    "David",
+			status:      200,
+			expectedRes: "User successfully created",
+			errMsg:      "",
+		},
+		{
+			name:        "invalid request",
+			username:    "1234",
+			status:      500,
+			expectedRes: "",
+			errMsg:      "user not created",
+		},
+		{
+			name:        "invalid request, username too long",
+			username:    "longusernameover10",
+			status:      500,
+			expectedRes: "",
+			errMsg:      "user not created",
+		},
 	}
 
+	for _, tc := range tt {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			serverMock := httpServer{
+				service: mockUserService{},
+				log:     l,
+			}
+			body := strings.NewReader("{\n\"username\": \"" + tc.username + "\"\n}")
+
+			req, err := http.NewRequest("POST", "localhost:50051/users/", body)
+			if err != nil {
+				t.Fatalf("could not create mock request: %v", err)
+			}
+
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+
+			handler := serverMock.Create()
+
+			handler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+
+			b, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				t.Fatalf("could not read response: %v", err)
+			}
+
+			if tc.errMsg == "" {
+				// Good Path
+				assert.Equal(t, tc.expectedRes, string(b))
+				assert.Equal(t, tc.status, res.StatusCode)
+				return
+			}
+			assert.Equal(t, tc.errMsg, string(bytes.TrimSpace(b)))
+			assert.Equal(t, tc.status, res.StatusCode)
+		})
+	}
+}
+
+func TestHttpServer_Delete_Test_Cases(t *testing.T) {
+	tt := []struct{
+		name string
+		id string
+		res string
+		errMsg string
+		status int
+	} {
+		{
+			name: "User successfully deleted",
+			id: "1",
+			res: "User successfully deleted",
+			errMsg: "",
+			status: 200,
+		},
+		{
+			name: "Invalid request, id not convertible to int",
+			id: "notAnInt",
+			res: "",
+			errMsg: "invalid query parameter",
+			status: 500,
+		},
+		{
+			name: "Invalid request, id not allowed",
+			id: "0",
+			res: "",
+			errMsg: "invalid id",
+			status: 404,
+		},
+	}
+
+	for _, tc := range tt {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			serverMock := httpServer{
+				service: mockUserService{},
+				log:     l,
+			}
+
+			req, err := http.NewRequest("POST", "localhost:50051/users/?id="+tc.id, nil)
+			if err != nil {
+				t.Fatalf("could not create mock request: %v", err)
+			}
+
+			req.Header.Set("Content-Type", "application/json")
+			rec := httptest.NewRecorder()
+
+			handler := http.HandlerFunc(serverMock.Delete)
+			handler.ServeHTTP(rec, req)
+
+			res := rec.Result()
+
+			b, err := ioutil.ReadAll(res.Body)
+			if err != nil {
+				t.Fatalf("could not read response: %v", err)
+			}
+
+			if tc.errMsg == "" {
+				// Good Path
+				assert.Equal(t, tc.res, string(bytes.TrimSpace(b)))
+				assert.Equal(t, tc.status, res.StatusCode)
+				return
+			}
+			assert.Equal(t, tc.errMsg, string(bytes.TrimSpace(b)))
+			assert.Equal(t, tc.status, res.StatusCode)
+		})
+	}
 }
 
 func TestHttpServer_Ping(t *testing.T) {
@@ -145,14 +288,36 @@ func (m mockUserService) GetByID(_ context.Context, id int64) (*model.User, erro
 	return nil, errors.New("could not find user with id")
 }
 
-func (m mockUserService) GetUsers(ctx context.Context) ([]*model.User, error) {
+func (m mockUserService) GetUsers(_ context.Context) ([]*model.User, error) {
 	users := generateUsers()
 	return users, nil
 }
 
-func (m mockUserService) Create(ctx context.Context, username string) error {
-	return nil
+func (m mockUserService) Create(_ context.Context, username string) error {
+	users := generateUsers()
+
+	for _, user := range users {
+		if username == user.Username {
+			return nil
+		}
+	}
+	return errors.New("user not created")
 }
+
+func (m mockUserService) Delete(_ context.Context, id int64) error {
+	if id <= 0 {
+		return errors.New("invalid id")
+	}
+	users := generateUsers()
+	for _, user := range users {
+		if id == user.ID {
+			return nil
+		}
+	}
+	return errors.New("user does not exist")
+}
+
+
 
 func generateUsers() []*model.User {
 	var users []*model.User

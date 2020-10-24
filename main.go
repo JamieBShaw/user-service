@@ -18,8 +18,9 @@ import (
 	"os/signal"
 	"time"
 )
+
 var (
-	log = logrus.New()
+	log    = logrus.New()
 	router = mux.NewRouter()
 
 	port = flag.String("port", "50051", "specify port for service to run on")
@@ -30,20 +31,20 @@ func main() {
 	flag.Parse()
 
 	dbConnection := pg.Connect(&pg.Options{
-		User:                  "james",
-		Password:              "postgres",
-		Database:              "postgres",
+		User:     "james",
+		Password: "postgres",
+		Database: "postgres",
 	})
 
 	defer dbConnection.Close()
 
 	repo := postgres.NewRepository(log, dbConnection)
-	userService := service.NewUserService(repo, log)
+	userService := service.NewUserService(repo)
 
 	if *grpc {
 		log.Infof("Starting GRPC User Service running on port: %v", *port)
 
-		lis, err := net.Listen("tcp", "localhost:" + *port)
+		lis, err := net.Listen("tcp", "localhost:"+*port)
 		if err != nil {
 			log.Fatal("Failed to listen", err)
 		}
@@ -57,8 +58,7 @@ func main() {
 		}
 
 	} else {
-
-		handler := internalhttp.NewHttpHandler(userService, router, log)
+		handler := internalhttp.NewHttpHandler(userService, router)
 
 		srv := &http.Server{
 			Addr:         "localhost:" + *port,
