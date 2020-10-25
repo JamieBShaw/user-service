@@ -4,8 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/JamieBShaw/user-service/domain/model"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 type Server interface {
@@ -18,11 +21,16 @@ type Server interface {
 }
 
 func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
+	userId := strings.TrimSpace(mux.Vars(r)["id"])
 
-	idString := r.URL.Query().Get("id")
+	if userId == "" {
+		err := errors.New("id not given")
+		s.log.Errorf("error: %v", err.Error() )
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	id, err := strconv.Atoi(idString)
+	id, err := strconv.Atoi(userId)
 	if err != nil {
 		s.log.Errorf("error: %v", err.Error())
 		http.Error(rw, errors.New("invalid query parameter").Error(), http.StatusInternalServerError)
@@ -36,7 +44,7 @@ func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(rw).Encode(user)
+	err = model.ToJson(rw, http.StatusOK, user)
 	if err != nil {
 		s.log.Errorf("error: %v", err.Error())
 		http.Error(rw, err.Error(), http.StatusNotFound)
@@ -44,14 +52,10 @@ func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (s *httpServer) Create() http.HandlerFunc {
-
 	type request struct {
 		Username string `json:"username"`
 	}
-
 	return func(rw http.ResponseWriter, r *http.Request) {
-		rw.Header().Set("Content-Type", "application/json")
-
 		var req request
 
 		err := json.NewDecoder(r.Body).Decode(&req)
@@ -60,13 +64,9 @@ func (s *httpServer) Create() http.HandlerFunc {
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
-
 		defer r.Body.Close()
 
-		s.log.Infof("request: %v", req.Username)
-
-		ctx := context.Background()
-		err = s.service.Create(ctx, req.Username)
+		err = s.service.Create(context.Background(), req.Username)
 		if err != nil {
 			s.log.Errorf("error: %v", err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -90,7 +90,7 @@ func (s *httpServer) GetUsers(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = json.NewEncoder(rw).Encode(users)
+	err = model.ToJson(rw, http.StatusOK, users)
 	if err != nil {
 		s.log.Errorf("error: %v", err)
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -119,6 +119,7 @@ func (s *httpServer) Delete(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (s *httpServer) Ping(rw http.ResponseWriter, r *http.Request) {
+	s.log.Info("Ping Request has been made....")
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("Pong!"))
 }

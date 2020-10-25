@@ -1,7 +1,9 @@
 package model
 
 import (
+	"encoding/json"
 	"errors"
+	"net/http"
 	"time"
 )
 
@@ -20,6 +22,12 @@ func (u *User) IsAdmin() bool {
 	return u.Admin
 }
 
+func ToJson(rw http.ResponseWriter, status int, body interface{}) error {
+	rw.Header().Set("Content-Type", "application/json")
+	rw.WriteHeader(status)
+	return json.NewEncoder(rw).Encode(body)
+}
+
 func (u *User) Validate() error {
 	ok, err := validateUser(u)
 	if err != nil {
@@ -28,7 +36,6 @@ func (u *User) Validate() error {
 	if !ok {
 		return errors.New("error validating user")
 	}
-
 	return nil
 }
 
@@ -45,7 +52,6 @@ func validateUser(user *User) (bool, error) {
 	if len(user.Username) > 12 {
 		return false, errors.New("username is to long")
 	}
-
 	if len(user.Username) < 3 {
 		return false, errors.New("username is too short")
 	}

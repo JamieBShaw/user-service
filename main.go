@@ -22,18 +22,26 @@ import (
 var (
 	log    = logrus.New()
 	router = mux.NewRouter()
-
-	port = flag.String("port", "50051", "specify port for service to run on")
+	port = os.Getenv("PORT")
+	dbPort = os.Getenv("DB_PORT")
 	grpc = flag.Bool("grpc", false, "service will use grpc (http2) as the transport layer")
 )
 
 func main() {
 	flag.Parse()
 
+	if port == "" {
+		port = "8080"
+	}
+	if dbPort == "" {
+		dbPort = "5432"
+	}
+
 	dbConnection := pg.Connect(&pg.Options{
 		User:     "james",
 		Password: "postgres",
 		Database: "postgres",
+		Addr: dbPort,
 	})
 
 	defer dbConnection.Close()
@@ -42,9 +50,9 @@ func main() {
 	userService := service.NewUserService(repo)
 
 	if *grpc {
-		log.Infof("Starting GRPC User Service running on port: %v", *port)
+		log.Infof("Starting GRPC User Service running on port: %v", port)
 
-		lis, err := net.Listen("tcp", "localhost:"+*port)
+		lis, err := net.Listen("tcp", "0.0.0.0:"+ port)
 		if err != nil {
 			log.Fatal("Failed to listen", err)
 		}
@@ -61,14 +69,14 @@ func main() {
 		handler := internalhttp.NewHttpHandler(userService, router)
 
 		srv := &http.Server{
-			Addr:         "localhost:" + *port,
+			Addr:         "0.0.0.0:" + port,
 			Handler:      handler,
 			WriteTimeout: 15 * time.Second,
 			ReadTimeout:  15 * time.Second,
 		}
 
 		go func() {
-			log.Infof("Starting HTTP User Service running on port: %v", *port)
+			log.Infof("Starting HTTP User Service running on port: %v", port)
 			if err := srv.ListenAndServe(); err != nil {
 				log.Println(err)
 			}

@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/gorilla/mux"
 	"io/ioutil"
 	"net/http"
 	"net/http/httptest"
@@ -68,11 +69,18 @@ func TestHttpServer_GetById_Test_Cases(t *testing.T) {
 			userId:      "42",
 		},
 		{
-			name:        "invalid url parameter",
+			name:        "invalid url parameter, invalid id given",
 			status:      500,
 			expectedRes: "",
 			errMsg:      "invalid query parameter",
 			userId:      "foxtrot",
+		},
+		{
+			name: "invalid url parameter, no id given",
+			status: 500,
+			expectedRes: "",
+			errMsg: "id not given",
+			userId: "",
 		},
 	}
 
@@ -84,15 +92,18 @@ func TestHttpServer_GetById_Test_Cases(t *testing.T) {
 				service: mockUserService{},
 				log:     l,
 			}
-			req, err := http.NewRequest("GET", "localhost:50051/users/?id="+tc.userId, nil)
+			req, err := http.NewRequest("GET", "localhost:50051/users/", nil)
 			if err != nil {
 				t.Fatalf("could not create mock request: %v", err)
 			}
+			req = mux.SetURLVars(req, map[string]string{
+				"id": tc.userId,
+			})
 			rec := httptest.NewRecorder()
 
 			handler := http.HandlerFunc(serverMock.GetById)
-
 			handler.ServeHTTP(rec, req)
+
 			res := rec.Result()
 			defer res.Body.Close()
 
@@ -100,7 +111,6 @@ func TestHttpServer_GetById_Test_Cases(t *testing.T) {
 			if err != nil {
 				t.Fatalf("could not read response: %v", err)
 			}
-
 			if tc.errMsg == "" {
 				// Happy Path
 				assert.Equal(t, tc.status, res.StatusCode)

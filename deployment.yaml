@@ -1,0 +1,30 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service-app
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      name: user-service-app
+  template:
+    metadata:
+      labels:
+        name: user-service-app
+    spec:
+      containers:
+        - name: application
+          image: jbshaw/user-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+      imagePullSecrets:
+        - name: regsecret
+
+
+
+

@@ -14,7 +14,7 @@ func main() {
 
 	cc, err := grpc.Dial("localhost:50051", grpc.WithInsecure())
 	if err != nil {
-		log.Fatalf("error getting connection grpc client: %v", err)
+		log.Fatalf("error getting connection grpc example_go_grpc_client: %v", err)
 	}
 
 	log.Println("listening on port 50051")
