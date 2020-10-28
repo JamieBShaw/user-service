@@ -68,6 +68,16 @@ func (repo *repository) GetUsers(_ context.Context) ([]*model.User, error) {
 }
 
 func (repo *repository) Delete(ctx context.Context, id int64) error {
+	repo.log.Info("REPO: Executing Delete User")
+
+	user := &model.User{
+		ID: id,
+	}
+	_, err := repo.db.Model(user).Where("id = ?", id).Delete()
+	if err != nil {
+		repo.log.Errorf("error deleting user: %v", err)
+		return err
+	}
 
 	return nil
 }

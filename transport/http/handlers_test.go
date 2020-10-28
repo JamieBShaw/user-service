@@ -22,7 +22,6 @@ type mockUserService struct {
 	db repository.Repository
 }
 
-
 type mockDb struct{}
 
 func TestHttpServer_GetUsers_Valid_Response(t *testing.T) {
@@ -58,7 +57,7 @@ func TestHttpServer_GetById_Test_Cases(t *testing.T) {
 			name:        "valid user response",
 			status:      200,
 			errMsg:      "",
-			expectedRes: "{\"id\":1,\"username\":\"David\",\"admin\":false}",
+			expectedRes: "{\"id\":1,\"username\":\"James\",\"admin\":false}",
 			userId:      "1",
 		},
 		{
@@ -76,11 +75,11 @@ func TestHttpServer_GetById_Test_Cases(t *testing.T) {
 			userId:      "foxtrot",
 		},
 		{
-			name: "invalid url parameter, no id given",
-			status: 500,
+			name:        "invalid url parameter, no id given",
+			status:      500,
 			expectedRes: "",
-			errMsg: "id not given",
-			userId: "",
+			errMsg:      "id not given",
+			userId:      "",
 		},
 	}
 
@@ -134,7 +133,7 @@ func TestHttpServer_Create(t *testing.T) {
 		{
 			name:        "valid user created",
 			username:    "David",
-			status:      200,
+			status:      201,
 			expectedRes: "User successfully created",
 			errMsg:      "",
 		},
@@ -196,31 +195,31 @@ func TestHttpServer_Create(t *testing.T) {
 }
 
 func TestHttpServer_Delete_Test_Cases(t *testing.T) {
-	tt := []struct{
-		name string
-		id string
-		res string
+	tt := []struct {
+		name   string
+		id     string
+		res    string
 		errMsg string
 		status int
-	} {
+	}{
 		{
-			name: "User successfully deleted",
-			id: "1",
-			res: "User successfully deleted",
+			name:   "User successfully deleted",
+			id:     "1",
+			res:    "User successfully deleted",
 			errMsg: "",
 			status: 200,
 		},
 		{
-			name: "Invalid request, id not convertible to int",
-			id: "notAnInt",
-			res: "",
+			name:   "Invalid request, id not convertible to int",
+			id:     "notAnInt",
+			res:    "",
 			errMsg: "invalid query parameter",
 			status: 500,
 		},
 		{
-			name: "Invalid request, id not allowed",
-			id: "0",
-			res: "",
+			name:   "Invalid request, id not allowed",
+			id:     "0",
+			res:    "",
 			errMsg: "invalid id",
 			status: 404,
 		},
@@ -235,10 +234,13 @@ func TestHttpServer_Delete_Test_Cases(t *testing.T) {
 				log:     l,
 			}
 
-			req, err := http.NewRequest("POST", "localhost:50051/users/?id="+tc.id, nil)
+			req, err := http.NewRequest("POST", "localhost:50051/users/", nil)
 			if err != nil {
 				t.Fatalf("could not create mock request: %v", err)
 			}
+			req = mux.SetURLVars(req, map[string]string{
+				"id": tc.id,
+			})
 
 			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
@@ -265,15 +267,19 @@ func TestHttpServer_Delete_Test_Cases(t *testing.T) {
 	}
 }
 
-func TestHttpServer_Ping(t *testing.T) {
-	server := httpServer{}
+func TestHttpServer_Healthz(t *testing.T) {
+	server := httpServer{
+		nil,
+		nil,
+		l,
+	}
 	req, err := http.NewRequest("GET", "localhost:50051/ping", nil)
 	if err != nil {
 		t.Fatalf("could not create mock request: %v", err)
 	}
 	rec := httptest.NewRecorder()
 
-	server.Ping(rec, req)
+	server.Healthz(rec, req)
 
 	res := rec.Result()
 	defer res.Body.Close()
@@ -286,6 +292,7 @@ func TestHttpServer_Ping(t *testing.T) {
 	assert.Equal(t, "Pong!", string(b))
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 }
+
 
 func (m mockUserService) GetByID(_ context.Context, id int64) (*model.User, error) {
 	users := generateUsers()
@@ -327,15 +334,13 @@ func (m mockUserService) Delete(_ context.Context, id int64) error {
 	return errors.New("user does not exist")
 }
 
-
-
 func generateUsers() []*model.User {
 	var users []*model.User
-	names := []string{"James", "David", "Michael"}
+	names := []string{"James", "David", "Michael", "jimmy", "michael", "teddy", "maclom"}
 
 	for i, name := range names {
 		users = append(users, &model.User{
-			ID:        int64(i),
+			ID:        int64(i+1),
 			Username:  name,
 			Admin:     false,
 			CreatedAt: time.Time{},

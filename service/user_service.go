@@ -17,7 +17,6 @@ type userService struct {
 	log *logrus.Logger
 }
 
-
 type UserService interface {
 	GetByID(ctx context.Context, id int64) (*model.User, error)
 	GetUsers(ctx context.Context) ([]*model.User, error)
@@ -71,6 +70,13 @@ func (u *userService) GetUsers(ctx context.Context) ([]*model.User, error) {
 	users, err := u.db.GetUsers(ctx)
 	if err != nil {
 		return nil, errors.New("unable to get users")
+	}
+
+	for _, user := range users {
+		err = user.Validate()
+		if err != nil {
+			u.log.Errorf("error user in users array not valid: %d, error: %v", user.ID, err)
+		}
 	}
 
 	return users, nil

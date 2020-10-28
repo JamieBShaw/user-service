@@ -20,7 +20,7 @@ func TestGrpcServer_GetById_Test_Cases(t *testing.T) {
 		id       int64
 		errMsg   string
 		response *protob.User
-		errCode   string
+		errCode  string
 	}{
 		{
 			name:   "get valid user",
@@ -37,7 +37,7 @@ func TestGrpcServer_GetById_Test_Cases(t *testing.T) {
 			id:       42,
 			errMsg:   "user not found",
 			response: nil,
-			errCode: "NotFound",
+			errCode:  "NotFound",
 		},
 	}
 	for _, tc := range tt {
@@ -67,7 +67,7 @@ func TestGrpcServer_GetUsers(t *testing.T) {
 		req      *protob.GetUsersRequest
 		errMsg   string
 		response []*protob.User
-		errCode   string
+		errCode  string
 	}{
 		{
 			name:     "valid request, users returned",
@@ -80,7 +80,7 @@ func TestGrpcServer_GetUsers(t *testing.T) {
 			req:      nil,
 			errMsg:   "invalid request",
 			response: nil,
-			errCode: "InvalidArgument",
+			errCode:  "InvalidArgument",
 		},
 	}
 	for _, tc := range tt {
@@ -118,14 +118,14 @@ func TestGrpcServer_Create_Test_Cases(t *testing.T) {
 			},
 			res:    "user created",
 			errMsg: "",
-			code: "",
+			code:   "",
 		},
 		{
 			name:   "bad request, username invalid",
 			req:    nil,
 			res:    "",
 			errMsg: "invalid request",
-			code: "InvalidArgument",
+			code:   "InvalidArgument",
 		},
 	}
 	for _, tc := range tt {

@@ -4,11 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/JamieBShaw/user-service/domain/model"
-	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"strings"
+
+	"github.com/JamieBShaw/user-service/domain/model"
+	"github.com/gorilla/mux"
 )
 
 type Server interface {
@@ -16,7 +17,7 @@ type Server interface {
 	GetUsers(rw http.ResponseWriter, r *http.Request)
 	Create() http.HandlerFunc
 	Delete(rw http.ResponseWriter, r *http.Request)
-	Ping(rw http.ResponseWriter, r *http.Request)
+	Healthz(rw http.ResponseWriter, r *http.Request)
 	ServeHTTP(rw http.ResponseWriter, r *http.Request)
 }
 
@@ -25,7 +26,7 @@ func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 
 	if userId == "" {
 		err := errors.New("id not given")
-		s.log.Errorf("error: %v", err.Error() )
+		s.log.Errorf("error: %v", err.Error())
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -73,17 +74,14 @@ func (s *httpServer) Create() http.HandlerFunc {
 			return
 		}
 
-		rw.WriteHeader(http.StatusOK)
+		rw.WriteHeader(http.StatusCreated)
 		rw.Write([]byte("User successfully created"))
 	}
 }
 
 func (s *httpServer) GetUsers(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Add("Content-Type", "application/json")
 
-	ctx := context.Background()
-
-	users, err := s.service.GetUsers(ctx)
+	users, err := s.service.GetUsers(context.Background())
 	if err != nil {
 		s.log.Errorf("error: %v", err)
 		http.Error(rw, err.Error(), http.StatusNotFound)
@@ -98,10 +96,9 @@ func (s *httpServer) GetUsers(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (s *httpServer) Delete(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Add("Content-Type", "application/json")
-	idString := r.URL.Query().Get("id")
+	userId := strings.TrimSpace(mux.Vars(r)["id"])
 
-	id, err := strconv.Atoi(idString)
+	id, err := strconv.Atoi(userId)
 	if err != nil {
 		s.log.Errorf("error: %v", err.Error())
 		http.Error(rw, errors.New("invalid query parameter").Error(), http.StatusInternalServerError)
@@ -118,8 +115,11 @@ func (s *httpServer) Delete(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("User successfully deleted"))
 }
 
-func (s *httpServer) Ping(rw http.ResponseWriter, r *http.Request) {
+func (s *httpServer) Healthz(rw http.ResponseWriter, r *http.Request) {
 	s.log.Info("Ping Request has been made....")
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("Pong!"))
 }
+
+
+

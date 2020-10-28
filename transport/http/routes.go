@@ -14,5 +14,5 @@ func (s *httpServer) routes() {
 	//Delete
 	deleteR.HandleFunc("/users/{id}", s.Delete)
 	//PING
-	get.HandleFunc("/ping", s.Ping)
+	get.HandleFunc("/healthz", s.Healthz)
 }

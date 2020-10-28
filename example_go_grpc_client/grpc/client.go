@@ -23,11 +23,6 @@ func main() {
 
 	c := protob.NewUserServiceClient(cc)
 
-	//req := &protob.GetUserRequest{
-	//	ID: int32(1),
-	//}
-	//getUserByID(c, req)
-
 	getUsers(c)
 
 }

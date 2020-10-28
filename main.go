@@ -20,28 +20,36 @@ import (
 )
 
 var (
-	log    = logrus.New()
-	router = mux.NewRouter()
-	port = os.Getenv("PORT")
-	dbPort = os.Getenv("DB_PORT")
-	grpc = flag.Bool("grpc", false, "service will use grpc (http2) as the transport layer")
+	log            = logrus.New()
+	router         = mux.NewRouter()
+	port           = os.Getenv("PORT")
+	DB_USER        = os.Getenv("PGUSER")
+	DB_PASSWORD     = os.Getenv("PGPASSWORD")
+	DB_NAME = os.Getenv("PGDATABASE")
+	grpc           = flag.Bool("grpc", false, "service will use grpc (http2) as the transport layer")
 )
 
 func main() {
 	flag.Parse()
 
-	if port == "" {
-		port = "8080"
-	}
-	if dbPort == "" {
-		dbPort = "5432"
-	}
-
 	dbConnection := pg.Connect(&pg.Options{
-		User:     "james",
-		Password: "postgres",
-		Database: "postgres",
-		Addr: dbPort,
+		User:     DB_USER,
+		Password: DB_PASSWORD,
+		Database: DB_NAME,
+		OnConnect: func(ctx context.Context, cn *pg.Conn) error {
+			_, err := cn.Exec("CREATE TABLE IF NOT EXISTS users (" +
+				"id bigserial primary key," +
+				"username varchar(40) unique,"+
+				"admin bool,"+
+				"created_at timestamp default now() not null," +
+				"updated_at timestamp default now() not null" +
+				");")
+			if err != nil {
+				log.Errorf("error creating table on service startup: %v", err)
+				return err
+			}
+			return nil
+		},
 	})
 
 	defer dbConnection.Close()
@@ -52,7 +60,7 @@ func main() {
 	if *grpc {
 		log.Infof("Starting GRPC User Service running on port: %v", port)
 
-		lis, err := net.Listen("tcp", "0.0.0.0:"+ port)
+		lis, err := net.Listen("tcp", "0.0.0.0:"+port)
 		if err != nil {
 			log.Fatal("Failed to listen", err)
 		}

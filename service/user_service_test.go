@@ -100,13 +100,13 @@ func TestUserService_Delete_Test_Cases(t *testing.T) {
 			errMsg: "",
 		},
 		{
-			name: "Invalid request; Not valid ID",
-			id: 0,
+			name:   "Invalid request; Not valid ID",
+			id:     0,
 			errMsg: "invalid id",
 		},
 		{
-			name:"Invalid request; User does not exist",
-			id: 42,
+			name:   "Invalid request; User does not exist",
+			id:     42,
 			errMsg: "user not found with id",
 		},
 	}
