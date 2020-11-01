@@ -72,7 +72,7 @@ func (gs *grpcServer) Create(ctx context.Context, req *protob.CreateUserRequest)
 		return nil, status.Errorf(codes.InvalidArgument, "invalid request")
 	}
 
-	err := gs.service.Create(ctx, req.Username)
+	err := gs.service.Create(ctx, req.Username, req.Password)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, err.Error())
 	}

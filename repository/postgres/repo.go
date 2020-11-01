@@ -14,6 +14,7 @@ type repository struct {
 	log *logrus.Logger
 }
 
+
 func NewRepository(log *logrus.Logger, db *pg.DB) *repository {
 	return &repository{
 		db:  db,
@@ -22,7 +23,7 @@ func NewRepository(log *logrus.Logger, db *pg.DB) *repository {
 }
 
 func (repo *repository) UserById(_ context.Context, id int64) (*model.User, error) {
-	repo.log.Info("REPO: Executing User By ID")
+	repo.log.Info("[POSTGRES REPO]: Executing User By ID")
 
 	var user model.User
 
@@ -34,11 +35,12 @@ func (repo *repository) UserById(_ context.Context, id int64) (*model.User, erro
 	return &user, nil
 }
 
-func (repo *repository) Create(_ context.Context, username string) error {
-	repo.log.Info("REPO: Executing Create User")
+func (repo *repository) Create(_ context.Context, username, password string) error {
+	repo.log.Info("[POSTGRES REPO]: Executing Create User")
 
 	user := &model.User{
 		Username: username,
+		Password: password,
 	}
 
 	_, err := repo.db.Model(user).Insert()
@@ -54,7 +56,7 @@ func (repo *repository) Create(_ context.Context, username string) error {
 }
 
 func (repo *repository) GetUsers(_ context.Context) ([]*model.User, error) {
-	repo.log.Info("REPO: Executing Get Users")
+	repo.log.Info("[POSTGRES REPO]: Executing Get Users")
 
 	var users []*model.User
 
@@ -68,7 +70,7 @@ func (repo *repository) GetUsers(_ context.Context) ([]*model.User, error) {
 }
 
 func (repo *repository) Delete(ctx context.Context, id int64) error {
-	repo.log.Info("REPO: Executing Delete User")
+	repo.log.Info("[POSTGRES REPO]: Executing Delete User")
 
 	user := &model.User{
 		ID: id,
@@ -81,3 +83,20 @@ func (repo *repository) Delete(ctx context.Context, id int64) error {
 
 	return nil
 }
+
+func (repo *repository) UserByUsername(ctx context.Context, username string) (*model.User, error) {
+	repo.log.Info("[POSTGRES REPO]: Executing Getting User by Username")
+
+	user := &model.User{
+		Username: username,
+	}
+
+	err := repo.db.Model(user).Where("username = ?", username).First()
+	if err != nil {
+		repo.log.Errorf("error getting user by username: %s, error: %v",username, err )
+		return nil, err
+	}
+
+	return user, nil
+}
+

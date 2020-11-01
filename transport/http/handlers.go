@@ -4,24 +4,27 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/JamieBShaw/user-service/domain/model"
+	"github.com/gorilla/mux"
 	"net/http"
 	"strconv"
 	"strings"
-
-	"github.com/JamieBShaw/user-service/domain/model"
-	"github.com/gorilla/mux"
 )
+
+const CurrentUserKey = "currentUser"
 
 type Server interface {
 	GetById(rw http.ResponseWriter, r *http.Request)
 	GetUsers(rw http.ResponseWriter, r *http.Request)
 	Create() http.HandlerFunc
+	Login() http.HandlerFunc
 	Delete(rw http.ResponseWriter, r *http.Request)
 	Healthz(rw http.ResponseWriter, r *http.Request)
 	ServeHTTP(rw http.ResponseWriter, r *http.Request)
 }
 
 func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
+	s.log.Info("[HTTP SERVER]: Executing GetById Handler")
 	userId := strings.TrimSpace(mux.Vars(r)["id"])
 
 	if userId == "" {
@@ -55,8 +58,10 @@ func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 func (s *httpServer) Create() http.HandlerFunc {
 	type request struct {
 		Username string `json:"username"`
+		Password string `json:"password"`
 	}
 	return func(rw http.ResponseWriter, r *http.Request) {
+		s.log.Info("[HTTP SERVER]: Executing Create Handler")
 		var req request
 
 		err := json.NewDecoder(r.Body).Decode(&req)
@@ -67,7 +72,7 @@ func (s *httpServer) Create() http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		err = s.service.Create(context.Background(), req.Username)
+		err = s.service.Create(context.Background(), req.Username, req.Password)
 		if err != nil {
 			s.log.Errorf("error: %v", err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -80,7 +85,7 @@ func (s *httpServer) Create() http.HandlerFunc {
 }
 
 func (s *httpServer) GetUsers(rw http.ResponseWriter, r *http.Request) {
-
+	s.log.Info("[HTTP SERVER]: Executing GetUsers Handler")
 	users, err := s.service.GetUsers(context.Background())
 	if err != nil {
 		s.log.Errorf("error: %v", err)
@@ -96,6 +101,7 @@ func (s *httpServer) GetUsers(rw http.ResponseWriter, r *http.Request) {
 }
 
 func (s *httpServer) Delete(rw http.ResponseWriter, r *http.Request) {
+	s.log.Info("[HTTP SERVER]: Executing Delete Handler")
 	userId := strings.TrimSpace(mux.Vars(r)["id"])
 
 	id, err := strconv.Atoi(userId)
@@ -113,6 +119,48 @@ func (s *httpServer) Delete(rw http.ResponseWriter, r *http.Request) {
 	}
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("User successfully deleted"))
+}
+
+func (s *httpServer) Login(next http.HandlerFunc) http.HandlerFunc {
+
+	type UserLoginRequest struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+
+	return func(rw http.ResponseWriter, r *http.Request) {
+		s.log.Info("[HTTP SERVER]: Executing Login Handler")
+		var req UserLoginRequest
+
+		err := json.NewDecoder(r.Body).Decode(&req)
+		if err != nil {
+			s.log.Errorf("error: %v", err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer r.Body.Close()
+
+		user, err := s.service.GetByUsername(context.Background(), req.Username)
+		if err != nil {
+			s.log.Errorf("error: %v", err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = user.Validate()
+		if err != nil {
+			s.log.Errorf("error: %v", err)
+			http.Error(rw, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if user.Password != req.Password {
+			http.Error(rw, errors.New("invalid credentials").Error(), http.StatusForbidden)
+		}
+
+		ctx := context.WithValue(r.Context(), CurrentUserKey, user.ID )
+		r = r.WithContext(ctx)
+		next(rw, r)
+	}
 }
 
 func (s *httpServer) Healthz(rw http.ResponseWriter, r *http.Request) {

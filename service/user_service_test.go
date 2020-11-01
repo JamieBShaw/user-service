@@ -79,7 +79,7 @@ func TestUserService_Create_Test_Cases(t *testing.T) {
 				db:  mockDb{},
 				log: l,
 			}
-			err := service.Create(context.Background(), tc.username)
+			err := service.Create(context.Background(), tc.username, "")
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 				return
@@ -152,12 +152,17 @@ func (m mockDb) UserById(ctx context.Context, id int64) (*model.User, error) {
 	return nil, errors.New("user not found")
 }
 
-func (m mockDb) Create(ctx context.Context, username string) error {
+func (m mockDb) Create(ctx context.Context, username, password string) error {
 	if username == "" {
 		return errors.New("invalid username")
 	}
 	return nil
 }
+
+func (m mockDb) UserByUsername(ctx context.Context, username string) (*model.User, error) {
+	return nil, nil
+}
+
 
 func (m mockDb) GetUsers(ctx context.Context) ([]*model.User, error) {
 	users := generateUsers()

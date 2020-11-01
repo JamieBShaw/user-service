@@ -22,6 +22,8 @@ type mockUserService struct {
 	db repository.Repository
 }
 
+
+
 type mockDb struct{}
 
 func TestHttpServer_GetUsers_Valid_Response(t *testing.T) {
@@ -310,7 +312,7 @@ func (m mockUserService) GetUsers(_ context.Context) ([]*model.User, error) {
 	return users, nil
 }
 
-func (m mockUserService) Create(_ context.Context, username string) error {
+func (m mockUserService) Create(_ context.Context, username, password string) error {
 	users := generateUsers()
 
 	for _, user := range users {
@@ -332,6 +334,10 @@ func (m mockUserService) Delete(_ context.Context, id int64) error {
 		}
 	}
 	return errors.New("user does not exist")
+}
+
+func (m mockUserService) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+	return nil, nil
 }
 
 func generateUsers() []*model.User {

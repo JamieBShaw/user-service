@@ -1,6 +1,9 @@
 package http
 
-import "net/http"
+import (
+	"github.com/JamieBShaw/user-service/middleware"
+	"net/http"
+)
 
 func (s *httpServer) routes() {
 	get := s.router.Methods(http.MethodGet).Subrouter()
@@ -11,8 +14,10 @@ func (s *httpServer) routes() {
 	get.HandleFunc("/users", s.GetUsers)
 	//Post
 	post.HandleFunc("/users", s.Create())
+	post.HandleFunc("/login", s.Login(middleware.Authentication()))
 	//Delete
 	deleteR.HandleFunc("/users/{id}", s.Delete)
 	//PING
 	get.HandleFunc("/healthz", s.Healthz)
+
 }

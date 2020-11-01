@@ -17,6 +17,7 @@ type httpServer struct {
 	log     *logrus.Logger
 }
 
+
 func (s *httpServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(rw, r)
 }

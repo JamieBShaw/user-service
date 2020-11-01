@@ -19,8 +19,9 @@ type userService struct {
 
 type UserService interface {
 	GetByID(ctx context.Context, id int64) (*model.User, error)
+	GetByUsername(ctx context.Context, username string) (*model.User, error)
 	GetUsers(ctx context.Context) ([]*model.User, error)
-	Create(ctx context.Context, username string) error
+	Create(ctx context.Context, username, password string) error
 	Delete(ctx context.Context, id int64) error
 }
 
@@ -29,7 +30,7 @@ func NewUserService(db repository.Repository) *userService {
 }
 
 func (u *userService) GetByID(ctx context.Context, id int64) (*model.User, error) {
-	u.log.Info("USER SERVICE: Get User by ID")
+	u.log.Info("[USER SERVICE]: Get User by ID")
 
 	if id <= 0 {
 		return nil, errors.New("invalid id")
@@ -49,14 +50,18 @@ func (u *userService) GetByID(ctx context.Context, id int64) (*model.User, error
 	return user, nil
 }
 
-func (u *userService) Create(ctx context.Context, username string) error {
-	u.log.Info("USER SERVICE: Create User:" + username)
+func (u *userService) Create(ctx context.Context, username, password string) error {
+	u.log.Info("[USER SERVICE]: Create User:" + username)
 
 	if username == "" || len(username) > 10 {
 		return errors.New("username invalid")
 	}
 
-	err := u.db.Create(ctx, username)
+	if password == "" || len(password) < 8 {
+		return errors.New("password invalid")
+	}
+
+	err := u.db.Create(ctx, username, password)
 	if err != nil {
 		return errors.New("error creating user")
 	}
@@ -65,7 +70,7 @@ func (u *userService) Create(ctx context.Context, username string) error {
 }
 
 func (u *userService) GetUsers(ctx context.Context) ([]*model.User, error) {
-	u.log.Info("USER SERVICE: Get Users")
+	u.log.Info("[USER SERVICE]: Get Users")
 
 	users, err := u.db.GetUsers(ctx)
 	if err != nil {
@@ -83,7 +88,7 @@ func (u *userService) GetUsers(ctx context.Context) ([]*model.User, error) {
 }
 
 func (u *userService) Delete(ctx context.Context, id int64) error {
-	u.log.Info("USER SERVICE: Delete User")
+	u.log.Info("[USER SERVICE]: Delete User")
 
 	if id <= 0 {
 		return errors.New("invalid id")
@@ -95,4 +100,20 @@ func (u *userService) Delete(ctx context.Context, id int64) error {
 	}
 
 	return nil
+}
+
+func (u *userService) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+	u.log.Info("[USER SERVICE]: Get User by Username")
+
+	if len(username) > 10 {
+		return nil, errors.New("invalid username")
+	}
+
+	user, err := u.db.UserByUsername(ctx, username)
+	if err != nil {
+		return nil, errors.New("user not found with username")
+	}
+
+	return user, nil
+
 }
