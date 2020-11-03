@@ -1,0 +1,27 @@
+syntax = "proto3";
+
+option go_package = "auth_service/protob";
+
+message CreateAccessTokenRequest {
+  int64 ID = 1;
+}
+message CreateAccessTokenResponse {
+  string AuthToken = 1;
+  string RefreshToken = 2;
+}
+
+message DeleteAccessTokenRequest {
+  string AccessUuid = 1;
+}
+
+message DeleteAccessTokenResponse {
+  string Confirmation = 1;
+}
+
+service AuthService {
+  // Generate an AccessToken object for a user and save it in redis, return the access token
+  // and refresh token to be used by other services
+  rpc CreateAccessToken(CreateAccessTokenRequest) returns (CreateAccessTokenResponse) {};
+  // Delete the AccessToken of a specific user from redis, return a confirmation.
+  rpc DeleteAccessToken(DeleteAccessTokenRequest) returns (DeleteAccessTokenResponse) {};
+ }

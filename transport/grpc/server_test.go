@@ -210,6 +210,10 @@ func TestGrpcServer_Delete_Test_Cases(t *testing.T) {
 
 }
 
+func (m mockUserService) GetByUsernameAndPassword(ctx context.Context, username, password string) (*model.User, error) {
+	panic("implement me")
+}
+
 func (m mockUserService) GetByID(ctx context.Context, id int64) (*model.User, error) {
 	users := generateUsers()
 	for _, user := range users {
@@ -224,7 +228,7 @@ func (m mockUserService) GetUsers(ctx context.Context) ([]*model.User, error) {
 	return generateUsers(), nil
 }
 
-func (m mockUserService) Create(ctx context.Context, username string) error {
+func (m mockUserService) Create(ctx context.Context, username, password string) error {
 	if username == "James" {
 		return nil
 	}

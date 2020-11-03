@@ -22,8 +22,6 @@ type mockUserService struct {
 	db repository.Repository
 }
 
-
-
 type mockDb struct{}
 
 func TestHttpServer_GetUsers_Valid_Response(t *testing.T) {
@@ -59,7 +57,7 @@ func TestHttpServer_GetById_Test_Cases(t *testing.T) {
 			name:        "valid user response",
 			status:      200,
 			errMsg:      "",
-			expectedRes: "{\"id\":1,\"username\":\"James\",\"admin\":false}",
+			expectedRes: "{\"id\":1,\"username\":\"James\",\"password\":\"password\",\"admin\":false}",
 			userId:      "1",
 		},
 		{
@@ -173,7 +171,7 @@ func TestHttpServer_Create(t *testing.T) {
 			req.Header.Set("Content-Type", "application/json")
 			rec := httptest.NewRecorder()
 
-			handler := serverMock.Create()
+			handler := serverMock.Register()
 
 			handler.ServeHTTP(rec, req)
 
@@ -274,6 +272,7 @@ func TestHttpServer_Healthz(t *testing.T) {
 		nil,
 		nil,
 		l,
+		nil,
 	}
 	req, err := http.NewRequest("GET", "localhost:50051/ping", nil)
 	if err != nil {
@@ -291,7 +290,7 @@ func TestHttpServer_Healthz(t *testing.T) {
 		t.Fatalf("could not read respinse: %v", err)
 	}
 
-	assert.Equal(t, "Pong!", string(b))
+	assert.Equal(t, "Healthy!", string(b))
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 }
 
@@ -336,22 +335,26 @@ func (m mockUserService) Delete(_ context.Context, id int64) error {
 	return errors.New("user does not exist")
 }
 
-func (m mockUserService) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+func (m mockUserService) GetByUsernameAndPassword(ctx context.Context, username, password string) (*model.User, error) {
 	return nil, nil
 }
 
 func generateUsers() []*model.User {
 	var users []*model.User
 	names := []string{"James", "David", "Michael", "jimmy", "michael", "teddy", "maclom"}
+	passwords := []string{"password", "password123", "laskdkad", "djpsafd", "jdfpsajf", "dpsa111", "dlwfops"}
 
 	for i, name := range names {
-		users = append(users, &model.User{
-			ID:        int64(i+1),
-			Username:  name,
-			Admin:     false,
-			CreatedAt: time.Time{},
-			UpdatedAt: time.Time{},
-		})
+		for _, password := range passwords {
+			users = append(users, &model.User{
+				ID:        int64(i + 1),
+				Username:  name,
+				Admin:     false,
+				Password:  password,
+				CreatedAt: time.Time{},
+				UpdatedAt: time.Time{},
+			})
+		}
 	}
 
 	return users

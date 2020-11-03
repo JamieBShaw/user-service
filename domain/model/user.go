@@ -3,6 +3,7 @@ package model
 import (
 	"encoding/json"
 	"errors"
+	"golang.org/x/crypto/bcrypt"
 	"net/http"
 	"time"
 )
@@ -40,6 +41,22 @@ func (u *User) Validate() error {
 	return nil
 }
 
+func (u *User) HashPassword(password string) error {
+	bytePassword := []byte(password)
+	hashPassword, err := bcrypt.GenerateFromPassword(bytePassword, bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+	u.Password = string(hashPassword)
+	return nil
+}
+
+func (u *User) ValidatePassword(password string) error {
+	bytePassword := []byte(password)
+	byteHashPassword := []byte(u.Password)
+	return bcrypt.CompareHashAndPassword(byteHashPassword, bytePassword)
+}
+
 func validateUser(user *User) (bool, error) {
 	if user == nil {
 		return false, errors.New("user is empty")
@@ -56,5 +73,6 @@ func validateUser(user *User) (bool, error) {
 	if len(user.Username) < 3 {
 		return false, errors.New("username is too short")
 	}
+
 	return true, nil
 }

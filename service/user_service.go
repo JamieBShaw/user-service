@@ -19,7 +19,7 @@ type userService struct {
 
 type UserService interface {
 	GetByID(ctx context.Context, id int64) (*model.User, error)
-	GetByUsername(ctx context.Context, username string) (*model.User, error)
+	GetByUsernameAndPassword(ctx context.Context, username, password string) (*model.User, error)
 	GetUsers(ctx context.Context) ([]*model.User, error)
 	Create(ctx context.Context, username, password string) error
 	Delete(ctx context.Context, id int64) error
@@ -44,14 +44,15 @@ func (u *userService) GetByID(ctx context.Context, id int64) (*model.User, error
 
 	err = user.Validate()
 	if err != nil {
-		return nil, err
+		u.log.Errorf("unable to validate user: %v", user)
+		return nil, errors.New("could not validate user")
 	}
 
 	return user, nil
 }
 
 func (u *userService) Create(ctx context.Context, username, password string) error {
-	u.log.Info("[USER SERVICE]: Create User:" + username)
+	u.log.Info("[USER SERVICE]: Register User:" + username)
 
 	if username == "" || len(username) > 10 {
 		return errors.New("username invalid")
@@ -102,18 +103,24 @@ func (u *userService) Delete(ctx context.Context, id int64) error {
 	return nil
 }
 
-func (u *userService) GetByUsername(ctx context.Context, username string) (*model.User, error) {
+func (u *userService) GetByUsernameAndPassword(ctx context.Context, username, password string) (*model.User, error) {
 	u.log.Info("[USER SERVICE]: Get User by Username")
-
-	if len(username) > 10 {
-		return nil, errors.New("invalid username")
-	}
 
 	user, err := u.db.UserByUsername(ctx, username)
 	if err != nil {
 		return nil, errors.New("user not found with username")
 	}
 
-	return user, nil
+	err = user.ValidatePassword(password)
+	if err != nil {
+		return nil, errors.New("user password incorrect")
+	}
 
+	err = user.Validate()
+	if err != nil {
+		u.log.Errorf("unable to validate user: %v", user)
+		return nil, errors.New("could not validate user")
+	}
+
+	return user, nil
 }

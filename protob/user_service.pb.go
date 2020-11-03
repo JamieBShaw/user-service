@@ -543,11 +543,11 @@ var file_protob_user_service_proto_depIdxs = []int32{
 	0, // 1: GetUsersResponse.users:type_name -> User
 	1, // 2: UserService.GetById:input_type -> GetUserRequest
 	3, // 3: UserService.GetUsers:input_type -> GetUsersRequest
-	5, // 4: UserService.Create:input_type -> CreateUserRequest
+	5, // 4: UserService.Register:input_type -> CreateUserRequest
 	7, // 5: UserService.Delete:input_type -> DeleteUserRequest
 	2, // 6: UserService.GetById:output_type -> GetUserResponse
 	4, // 7: UserService.GetUsers:output_type -> GetUsersResponse
-	6, // 8: UserService.Create:output_type -> CreateUserResponse
+	6, // 8: UserService.Register:output_type -> CreateUserResponse
 	8, // 9: UserService.Delete:output_type -> DeleteUserResponse
 	6, // [6:10] is the sub-list for method output_type
 	2, // [2:6] is the sub-list for method input_type

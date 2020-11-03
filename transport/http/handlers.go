@@ -5,23 +5,19 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/JamieBShaw/user-service/domain/model"
+	"github.com/JamieBShaw/user-service/protob"
 	"github.com/gorilla/mux"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const CurrentUserKey = "currentUser"
 
-type Server interface {
-	GetById(rw http.ResponseWriter, r *http.Request)
-	GetUsers(rw http.ResponseWriter, r *http.Request)
-	Create() http.HandlerFunc
-	Login() http.HandlerFunc
-	Delete(rw http.ResponseWriter, r *http.Request)
-	Healthz(rw http.ResponseWriter, r *http.Request)
-	ServeHTTP(rw http.ResponseWriter, r *http.Request)
-}
+
 
 func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 	s.log.Info("[HTTP SERVER]: Executing GetById Handler")
@@ -55,13 +51,13 @@ func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (s *httpServer) Create() http.HandlerFunc {
+func (s *httpServer) Register() http.HandlerFunc {
 	type request struct {
 		Username string `json:"username"`
 		Password string `json:"password"`
 	}
 	return func(rw http.ResponseWriter, r *http.Request) {
-		s.log.Info("[HTTP SERVER]: Executing Create Handler")
+		s.log.Info("[HTTP SERVER]: Executing Register Handler")
 		var req request
 
 		err := json.NewDecoder(r.Body).Decode(&req)
@@ -121,7 +117,7 @@ func (s *httpServer) Delete(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("User successfully deleted"))
 }
 
-func (s *httpServer) Login(next http.HandlerFunc) http.HandlerFunc {
+func (s *httpServer) Login() http.HandlerFunc {
 
 	type UserLoginRequest struct {
 		Username string `json:"username"`
@@ -140,33 +136,61 @@ func (s *httpServer) Login(next http.HandlerFunc) http.HandlerFunc {
 		}
 		defer r.Body.Close()
 
-		user, err := s.service.GetByUsername(context.Background(), req.Username)
+		user, err := s.service.GetByUsernameAndPassword(context.Background(), req.Username, req.Password)
 		if err != nil {
 			s.log.Errorf("error: %v", err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		err = user.Validate()
+		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		defer cancel()
+
+		res , err := s.client.CreateAccessToken(ctx, &protob.CreateAccessTokenRequest{
+			ID: user.ID,
+		})
+		if err != nil {
+			s.log.Errorf("error: %v", err)
+
+			err, ok := status.FromError(err)
+			if ok {
+				if err.Code() == codes.DeadlineExceeded {
+					s.log.Errorf("timeout exceeded: %v", err)
+					return
+				}
+				s.log.Errorf("unexpected error: %v", err)
+			}
+			s.log.Errorf("error whilke calling CreateAccessToken RPC: %v", err)
+			return
+		}
+		tokens := map[string]string{
+			"access_token":  res.GetAuthToken(),
+			"refresh_token": res.GetRefreshToken(),
+		}
+
+		err = json.NewEncoder(rw).Encode(&tokens)
 		if err != nil {
 			s.log.Errorf("error: %v", err)
 			http.Error(rw, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		if user.Password != req.Password {
-			http.Error(rw, errors.New("invalid credentials").Error(), http.StatusForbidden)
-		}
 
-		ctx := context.WithValue(r.Context(), CurrentUserKey, user.ID )
-		r = r.WithContext(ctx)
-		next(rw, r)
+		rw.WriteHeader(http.StatusOK)
 	}
 }
+
+func (s *httpServer) Logout() http.HandlerFunc {
+
+	return func(rw http.ResponseWriter, r *http.Request) {
+		s.log.Info("[HTTP SERVER]: Executing Login Handler")
+	}
+}
+
 
 func (s *httpServer) Healthz(rw http.ResponseWriter, r *http.Request) {
 	s.log.Info("Ping Request has been made....")
 	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte("Pong!"))
+	rw.Write([]byte("Healthy!"))
 }
 
 

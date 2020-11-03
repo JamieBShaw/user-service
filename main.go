@@ -52,6 +52,15 @@ func main() {
 		},
 	})
 
+	cc, err := googlegrpc.Dial("0.0.0.0:8081", googlegrpc.WithInsecure())
+	if err != nil {
+		log.Fatalf("error getting connection grpc client: %v", err)
+	}
+
+	log.Println("Starting GPRC Client dial on port 8081")
+
+	authClient := protob.NewAuthServiceClient(cc)
+
 	defer dbConnection.Close()
 
 	repo := postgres.NewRepository(log, dbConnection)
@@ -74,7 +83,7 @@ func main() {
 		}
 
 	} else {
-		handler := internalhttp.NewHttpHandler(userService, router)
+		handler := internalhttp.NewHttpHandler(userService, router, authClient)
 
 		srv := &http.Server{
 			Addr:         "0.0.0.0:" + port,
@@ -99,7 +108,7 @@ func main() {
 		// Block until we receive our signal.
 		<-c
 
-		// Create a deadline to wait for.
+		// Register a deadline to wait for.
 		ctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
 		defer cancel()
 		// Doesn't block if no connections, but will otherwise wait

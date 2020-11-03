@@ -58,17 +58,26 @@ func TestUserService_Create_Test_Cases(t *testing.T) {
 	tt := []struct {
 		name     string
 		username string
+		pasword string
 		errMsg   string
 	}{
 		{
 			name:     "create user successfully",
 			username: "david",
+			pasword: "password",
 			errMsg:   "",
 		},
 		{
 			name:     "error creating user, invalid username request",
 			username: "",
+			pasword: "password",
 			errMsg:   "username invalid",
+		},
+		{
+			name: "error creating user, invalid password request",
+			username: "david",
+			pasword: "",
+			errMsg: "password invalid",
 		},
 	}
 	for _, tc := range tt {
@@ -79,7 +88,7 @@ func TestUserService_Create_Test_Cases(t *testing.T) {
 				db:  mockDb{},
 				log: l,
 			}
-			err := service.Create(context.Background(), tc.username, "")
+			err := service.Create(context.Background(), tc.username, tc.pasword)
 			if err != nil {
 				assert.Equal(t, tc.errMsg, err.Error())
 				return

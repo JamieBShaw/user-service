@@ -36,14 +36,19 @@ func (repo *repository) UserById(_ context.Context, id int64) (*model.User, erro
 }
 
 func (repo *repository) Create(_ context.Context, username, password string) error {
-	repo.log.Info("[POSTGRES REPO]: Executing Create User")
+	repo.log.Info("[POSTGRES REPO]: Executing Register User")
 
 	user := &model.User{
 		Username: username,
 		Password: password,
 	}
 
-	_, err := repo.db.Model(user).Insert()
+	err := user.HashPassword(password)
+	if err != nil {
+		return err
+	}
+
+	_, err = repo.db.Model(user).Insert()
 	if err != nil {
 		return err
 	}

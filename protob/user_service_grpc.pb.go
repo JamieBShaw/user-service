@@ -54,7 +54,7 @@ func (c *userServiceClient) GetUsers(ctx context.Context, in *GetUsersRequest, o
 
 func (c *userServiceClient) Create(ctx context.Context, in *CreateUserRequest, opts ...grpc.CallOption) (*CreateUserResponse, error) {
 	out := new(CreateUserResponse)
-	err := c.cc.Invoke(ctx, "/UserService/Create", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/UserService/Register", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func (*UnimplementedUserServiceServer) GetUsers(context.Context, *GetUsersReques
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsers not implemented")
 }
 func (*UnimplementedUserServiceServer) Create(context.Context, *CreateUserRequest) (*CreateUserResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Create not implemented")
+	return nil, status.Errorf(codes.Unimplemented, "method Register not implemented")
 }
 func (*UnimplementedUserServiceServer) Delete(context.Context, *DeleteUserRequest) (*DeleteUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Delete not implemented")
@@ -152,7 +152,7 @@ func _UserService_Create_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/UserService/Create",
+		FullMethod: "/UserService/Register",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UserServiceServer).Create(ctx, req.(*CreateUserRequest))
@@ -191,7 +191,7 @@ var _UserService_serviceDesc = grpc.ServiceDesc{
 			Handler:    _UserService_GetUsers_Handler,
 		},
 		{
-			MethodName: "Create",
+			MethodName: "Register",
 			Handler:    _UserService_Create_Handler,
 		},
 		{
