@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	authApi "github.com/JamieBShaw/user-service/api/auth_serivce_grpc"
 	"github.com/JamieBShaw/user-service/protob"
 	"github.com/JamieBShaw/user-service/repository/postgres"
 	"github.com/JamieBShaw/user-service/service"
@@ -52,15 +53,6 @@ func main() {
 		},
 	})
 
-	cc, err := googlegrpc.Dial("0.0.0.0:8081", googlegrpc.WithInsecure())
-	if err != nil {
-		log.Fatalf("error getting connection grpc client: %v", err)
-	}
-
-	log.Println("Starting GPRC Client dial on port 8081")
-
-	authClient := protob.NewAuthServiceClient(cc)
-
 	defer dbConnection.Close()
 
 	repo := postgres.NewRepository(log, dbConnection)
@@ -83,7 +75,9 @@ func main() {
 		}
 
 	} else {
-		handler := internalhttp.NewHttpHandler(userService, router, authClient)
+
+		cc := authApi.NewAuthClientConn()
+		handler := internalhttp.NewHttpHandler(userService, router,	protob.NewAuthServiceClient(cc) )
 
 		srv := &http.Server{
 			Addr:         "0.0.0.0:" + port,
@@ -121,3 +115,7 @@ func main() {
 		os.Exit(0)
 	}
 }
+
+
+
+
