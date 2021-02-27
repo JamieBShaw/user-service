@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+
 	"github.com/JamieBShaw/user-service/protob"
 	"github.com/JamieBShaw/user-service/service"
 	"github.com/sirupsen/logrus"

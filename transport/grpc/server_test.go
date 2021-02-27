@@ -3,12 +3,13 @@ package grpc
 import (
 	"context"
 	"errors"
+	"testing"
+	"time"
+
 	"github.com/JamieBShaw/user-service/domain/model"
 	"github.com/JamieBShaw/user-service/protob"
 	"github.com/stretchr/testify/assert"
 	"google.golang.org/grpc/status"
-	"testing"
-	"time"
 )
 
 type mockUserService struct {

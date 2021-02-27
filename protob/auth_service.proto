@@ -18,6 +18,7 @@ message DeleteAccessTokenResponse {
   string Confirmation = 1;
 }
 
+// NOTE: AuthService Dials/Listens on port 8081
 service AuthService {
   // Generate an AccessToken object for a user and save it in redis, return the access token
   // and refresh token to be used by other services

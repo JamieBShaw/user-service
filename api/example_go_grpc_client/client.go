@@ -10,6 +10,7 @@ import (
 	"log"
 )
 
+// Example grpc client I built before attempting to implement
 func main() {
 
 	cc, err := grpc.Dial("localhost:50051", grpc.WithInsecure())

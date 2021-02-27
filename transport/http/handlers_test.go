@@ -5,13 +5,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/gorilla/mux"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/JamieBShaw/user-service/protob"
+	"github.com/gorilla/mux"
+	"google.golang.org/grpc"
 
 	"github.com/JamieBShaw/user-service/domain/model"
 	"github.com/JamieBShaw/user-service/repository"
@@ -22,7 +26,7 @@ type mockUserService struct {
 	db repository.Repository
 }
 
-type mockDb struct{}
+type mockAuthClient struct{}
 
 func TestHttpServer_GetUsers_Valid_Response(t *testing.T) {
 	serverMock := httpServer{
@@ -294,6 +298,96 @@ func TestHttpServer_Healthz(t *testing.T) {
 	assert.Equal(t, http.StatusOK, res.StatusCode)
 }
 
+//
+//func TestHttpServer_Login(t *testing.T) {
+//	tt := []struct {
+//		name string
+//		username string
+//		password string
+//		errMsg string
+//		status int
+//		response string
+//	}{
+//		{
+//			name: "User successfuly recieved",
+//			username: "James",
+//			password: "password",
+//			errMsg: "",
+//			status: 200,
+//			response: "{\"access_token\":\"3214343254\",\"refresh_token\":\"5435436265\"}",
+//		},
+//		{
+//			name: "User not found",
+//			username: "",
+//			password: "password",
+//			errMsg: "user not found with username",
+//			status: 500,
+//			response: "",
+//		},
+//		{
+//			name: "invalid username",
+//			username: "ia1",
+//			password: "password",
+//			errMsg: "invalid username",
+//			status: 500,
+//			response: "",
+//		},
+//	}
+//	for _, tc := range tt {
+//		tc := tc
+//
+//		type UserLoginRequest struct {
+//			Username string `json:"username"`
+//			Password string `json:"password"`
+//		}
+//
+//		t.Run(tc.name, func(t *testing.T) {
+//			t.Parallel()
+//			serverMock := httpServer{
+//				service: mockUserService{},
+//				log:     l,
+//				authServiceClient: mockAuthClient{},
+//			}
+//
+//			loginReq := &UserLoginRequest{
+//				Username: tc.username,
+//				Password: tc.password,
+//			}
+//
+//			reqByte, _ := json.Marshal(loginReq)
+//
+//			body := bytes.NewReader(reqByte)
+//
+//			req, err := http.NewRequest("POST", "localhost:50051/login", body)
+//			if err != nil {
+//				t.Fatalf("could not create mock request: %v", err)
+//			}
+//
+//			req.Header.Set("Content-Type", "application/json")
+//			rec := httptest.NewRecorder()
+//
+//			handler := serverMock.Login()
+//			handler.ServeHTTP(rec, req)
+//
+//			res := rec.Result()
+//
+//			b, err := ioutil.ReadAll(res.Body)
+//			if err != nil {
+//				t.Fatalf("could not read response: %v", err)
+//			}
+//
+//			if tc.errMsg == "" {
+//				// Good Path
+//				assert.Equal(t, tc.response, string(bytes.TrimSpace(b)))
+//				assert.Equal(t, tc.status, res.StatusCode)
+//				return
+//			}
+//			assert.Equal(t, tc.errMsg, string(b))
+//			assert.Equal(t, tc.status, res.StatusCode)
+//		})
+//	}
+//
+//}
 
 func (m mockUserService) GetByID(_ context.Context, id int64) (*model.User, error) {
 	users := generateUsers()
@@ -335,8 +429,28 @@ func (m mockUserService) Delete(_ context.Context, id int64) error {
 	return errors.New("user does not exist")
 }
 
-func (m mockUserService) GetByUsernameAndPassword(ctx context.Context, username, password string) (*model.User, error) {
-	return nil, nil
+func (m mockUserService) GetByUsernameAndPassword(_ context.Context, username, password string) (*model.User, error) {
+	users := generateUsers()
+
+	for _, user := range users {
+		if username == user.Username {
+			log.Printf("username: %v", username)
+			return user, nil
+		}
+	}
+
+	return nil, errors.New("error username")
+}
+
+func (m mockAuthClient) CreateAccessToken(ctx context.Context, in *protob.CreateAccessTokenRequest, opts ...grpc.CallOption) (*protob.CreateAccessTokenResponse, error) {
+	return &protob.CreateAccessTokenResponse{
+		AuthToken:    "3214343254",
+		RefreshToken: "5435436265",
+	}, nil
+}
+
+func (m mockAuthClient) DeleteAccessToken(ctx context.Context, in *protob.DeleteAccessTokenRequest, opts ...grpc.CallOption) (*protob.DeleteAccessTokenResponse, error) {
+	return &protob.DeleteAccessTokenResponse{Confirmation: "Success"}, nil
 }
 
 func generateUsers() []*model.User {

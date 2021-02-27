@@ -14,7 +14,6 @@ type repository struct {
 	log *logrus.Logger
 }
 
-
 func NewRepository(log *logrus.Logger, db *pg.DB) *repository {
 	return &repository{
 		db:  db,
@@ -98,10 +97,9 @@ func (repo *repository) UserByUsername(ctx context.Context, username string) (*m
 
 	err := repo.db.Model(user).Where("username = ?", username).First()
 	if err != nil {
-		repo.log.Errorf("error getting user by username: %s, error: %v",username, err )
+		repo.log.Errorf("error getting user by username: %s, error: %v", username, err)
 		return nil, err
 	}
 
 	return user, nil
 }
-

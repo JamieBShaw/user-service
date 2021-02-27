@@ -3,10 +3,11 @@ package service
 import (
 	"context"
 	"errors"
-	"github.com/JamieBShaw/user-service/domain/model"
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"time"
+
+	"github.com/JamieBShaw/user-service/domain/model"
+	"github.com/stretchr/testify/assert"
 )
 
 type mockDb struct{}
@@ -58,26 +59,26 @@ func TestUserService_Create_Test_Cases(t *testing.T) {
 	tt := []struct {
 		name     string
 		username string
-		pasword string
+		pasword  string
 		errMsg   string
 	}{
 		{
 			name:     "create user successfully",
 			username: "david",
-			pasword: "password",
+			pasword:  "password",
 			errMsg:   "",
 		},
 		{
 			name:     "error creating user, invalid username request",
 			username: "",
-			pasword: "password",
+			pasword:  "password",
 			errMsg:   "username invalid",
 		},
 		{
-			name: "error creating user, invalid password request",
+			name:     "error creating user, invalid password request",
 			username: "david",
-			pasword: "",
-			errMsg: "password invalid",
+			pasword:  "",
+			errMsg:   "password invalid",
 		},
 	}
 	for _, tc := range tt {
@@ -171,7 +172,6 @@ func (m mockDb) Create(ctx context.Context, username, password string) error {
 func (m mockDb) UserByUsername(ctx context.Context, username string) (*model.User, error) {
 	return nil, nil
 }
-
 
 func (m mockDb) GetUsers(ctx context.Context) ([]*model.User, error) {
 	users := generateUsers()

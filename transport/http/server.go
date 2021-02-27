@@ -1,11 +1,12 @@
 package http
 
 import (
+	"net/http"
+
 	"github.com/JamieBShaw/user-service/protob"
 	"github.com/JamieBShaw/user-service/service"
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
-	"net/http"
 )
 
 var (
@@ -24,12 +25,11 @@ type Server interface {
 }
 
 type httpServer struct {
-	service service.UserService
-	router  *mux.Router
-	log     *logrus.Logger
-	client  protob.AuthServiceClient
+	service           service.UserService
+	router            *mux.Router
+	log               *logrus.Logger
+	authServiceClient protob.AuthServiceClient
 }
-
 
 func (s *httpServer) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	s.router.ServeHTTP(rw, r)

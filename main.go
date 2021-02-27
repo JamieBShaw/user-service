@@ -3,7 +3,13 @@ package main
 import (
 	"context"
 	"flag"
-	authApi "github.com/JamieBShaw/user-service/api/auth_serivce_grpc"
+	"net"
+	"net/http"
+	"os"
+	"os/signal"
+	"time"
+
+	api "github.com/JamieBShaw/user-service/api/auth_serivce_grpc"
 	"github.com/JamieBShaw/user-service/protob"
 	"github.com/JamieBShaw/user-service/repository/postgres"
 	"github.com/JamieBShaw/user-service/service"
@@ -13,35 +19,30 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/sirupsen/logrus"
 	googlegrpc "google.golang.org/grpc"
-	"net"
-	"net/http"
-	"os"
-	"os/signal"
-	"time"
 )
 
 var (
-	log            = logrus.New()
-	router         = mux.NewRouter()
-	port           = os.Getenv("PORT")
-	DB_USER        = os.Getenv("PGUSER")
-	DB_PASSWORD     = os.Getenv("PGPASSWORD")
-	DB_NAME = os.Getenv("PGDATABASE")
-	grpc           = flag.Bool("grpc", false, "service will use grpc (http2) as the transport layer")
+	log        = logrus.New()
+	router     = mux.NewRouter()
+	grpc       = flag.Bool("grpc", false, "service will use grpc (http2) as the transport layer")
+	port       = os.Getenv("PORT")
+	DbUser     = os.Getenv("PGUSER")
+	DbPassword = os.Getenv("PGPASSWORD")
+	DbName     = os.Getenv("PGDATABASE")
 )
 
 func main() {
 	flag.Parse()
 
 	dbConnection := pg.Connect(&pg.Options{
-		User:     DB_USER,
-		Password: DB_PASSWORD,
-		Database: DB_NAME,
+		User:     DbUser,
+		Password: DbPassword,
+		Database: DbName,
 		OnConnect: func(ctx context.Context, cn *pg.Conn) error {
 			_, err := cn.Exec("CREATE TABLE IF NOT EXISTS users (" +
 				"id bigserial primary key," +
-				"username varchar(40) unique,"+
-				"admin bool,"+
+				"username varchar(40) unique," +
+				"admin bool," +
 				"created_at timestamp default now() not null," +
 				"updated_at timestamp default now() not null" +
 				");")
@@ -58,8 +59,12 @@ func main() {
 	repo := postgres.NewRepository(log, dbConnection)
 	userService := service.NewUserService(repo)
 
+	if port == "" {
+		port = "8080"
+	}
+
 	if *grpc {
-		log.Infof("Starting GRPC User Service running on port: %v", port)
+		log.Infof("Starting GRPC User Service running on port: %v.", port)
 
 		lis, err := net.Listen("tcp", "0.0.0.0:"+port)
 		if err != nil {
@@ -76,8 +81,8 @@ func main() {
 
 	} else {
 
-		cc := authApi.NewAuthClientConn()
-		handler := internalhttp.NewHttpHandler(userService, router,	protob.NewAuthServiceClient(cc) )
+		cc := api.NewAuthClientConn()
+		handler := internalhttp.NewHttpHandler(userService, router, protob.NewAuthServiceClient(cc))
 
 		srv := &http.Server{
 			Addr:         "0.0.0.0:" + port,
@@ -93,7 +98,6 @@ func main() {
 			}
 		}()
 
-
 		c := make(chan os.Signal, 1)
 		// We'll accept graceful shutdowns when quit via SIGINT (Ctrl+C)
 		// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
@@ -107,7 +111,9 @@ func main() {
 		defer cancel()
 		// Doesn't block if no connections, but will otherwise wait
 		// until the timeout deadline.
-		srv.Shutdown(ctx)
+
+		_ = srv.Shutdown(ctx)
+
 		// Optionally, you could run srv.Shutdown in a goroutine and block on
 		// <-ctx.Done() if your application should wait for other services
 		// to finalize based on context cancellation.
@@ -115,7 +121,3 @@ func main() {
 		os.Exit(0)
 	}
 }
-
-
-
-

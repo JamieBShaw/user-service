@@ -1,18 +1,19 @@
 package auth_serivce_grpc
 
 import (
-	googlegrpc "google.golang.org/grpc"
-	"log"
+
+	log "github.com/sirupsen/logrus"
+
+	"google.golang.org/grpc"
 )
 
-
-func NewAuthClientConn() (* googlegrpc.ClientConn) {
-	cc, err := googlegrpc.Dial("0.0.0.0:8081", googlegrpc.WithInsecure())
+func NewAuthClientConn() *grpc.ClientConn {
+	cc, err := grpc.Dial("0.0.0.0:8081", grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("error getting connection grpc client: %v", err)
 		return nil
 	}
 
-	log.Println("Starting GRPC AuthService Client on port: 8081 ..........")
+	log.Info("Starting GRPC AuthService Client on port: 8081.")
 	return cc
 }

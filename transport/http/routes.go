@@ -6,6 +6,7 @@ import (
 )
 
 func (s *httpServer) routes() {
+
 	get := s.router.Methods(http.MethodGet).Subrouter()
 	post := s.router.Methods(http.MethodPost).Subrouter()
 	deleteR := s.router.Methods(http.MethodDelete).Subrouter()

@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+
 	"github.com/JamieBShaw/user-service/domain/model"
 	"github.com/JamieBShaw/user-service/repository"
 	"github.com/sirupsen/logrus"

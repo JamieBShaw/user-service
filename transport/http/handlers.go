@@ -4,20 +4,17 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/JamieBShaw/user-service/domain/model"
 	"github.com/JamieBShaw/user-service/protob"
 	"github.com/gorilla/mux"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"net/http"
-	"strconv"
-	"strings"
-	"time"
 )
-
-const CurrentUserKey = "currentUser"
-
-
 
 func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 	s.log.Info("[HTTP SERVER]: Executing GetById Handler")
@@ -31,6 +28,7 @@ func (s *httpServer) GetById(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	id, err := strconv.Atoi(userId)
+
 	if err != nil {
 		s.log.Errorf("error: %v", err.Error())
 		http.Error(rw, errors.New("invalid query parameter").Error(), http.StatusInternalServerError)
@@ -128,10 +126,10 @@ func (s *httpServer) Login() http.HandlerFunc {
 		s.log.Info("[HTTP SERVER]: Executing Login Handler")
 		var req UserLoginRequest
 
-		err := json.NewDecoder(r.Body).Decode(&req)
-		if err != nil {
-			s.log.Errorf("error: %v", err)
-			http.Error(rw, err.Error(), http.StatusInternalServerError)
+		decodeErr := json.NewDecoder(r.Body).Decode(&req)
+		if decodeErr != nil {
+			s.log.Errorf("error: %v", decodeErr)
+			http.Error(rw, decodeErr.Error(), http.StatusInternalServerError)
 			return
 		}
 		defer r.Body.Close()
@@ -143,10 +141,12 @@ func (s *httpServer) Login() http.HandlerFunc {
 			return
 		}
 
-		ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Second)
+		s.log.Info("passed service")
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		defer cancel()
 
-		res , err := s.client.CreateAccessToken(ctx, &protob.CreateAccessTokenRequest{
+		res, err := s.authServiceClient.CreateAccessToken(ctx, &protob.CreateAccessTokenRequest{
 			ID: user.ID,
 		})
 		if err != nil {
@@ -182,16 +182,12 @@ func (s *httpServer) Login() http.HandlerFunc {
 func (s *httpServer) Logout() http.HandlerFunc {
 
 	return func(rw http.ResponseWriter, r *http.Request) {
-		s.log.Info("[HTTP SERVER]: Executing Login Handler")
+		s.log.Info("[HTTP SERVER]: Executing Logout Handler")
 	}
 }
-
 
 func (s *httpServer) Healthz(rw http.ResponseWriter, r *http.Request) {
 	s.log.Info("Ping Request has been made....")
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("Healthy!"))
 }
-
-
-
