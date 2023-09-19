@@ -1,8 +1,9 @@
 package http
 
 import (
-	auth "github.com/JamieBShaw/auth-service/middleware/http_middleware"
 	"net/http"
+
+	auth "github.com/JamieBShaw/auth-service/middleware/http_middleware"
 )
 
 func (s *httpServer) routes() {
@@ -16,7 +17,7 @@ func (s *httpServer) routes() {
 	//Post
 	post.HandleFunc("/register", s.Register())
 	post.HandleFunc("/login", s.Login())
-	post.HandleFunc("/logout", auth.AuthenticationMiddlware(s.Logout()))
+	post.HandleFunc("/logout", auth.AuthenticationMiddleware(s.Logout()))
 	//Delete
 	deleteR.HandleFunc("/users/{id}", s.Delete)
 	//PING
